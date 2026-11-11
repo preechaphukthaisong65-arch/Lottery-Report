@@ -1,6 +1,11 @@
 name: Lottery source verifier
 
 on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - ".github/scripts/**"
+      - ".github/workflows/lottery-verifier.yml"
   schedule:
     - cron: "15 9 * * *"
     - cron: "*/5 9 * * *"
