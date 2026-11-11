@@ -14,7 +14,7 @@ object DatabaseProvider {
                 LotteryDatabase::class.java,
                 "lottery-report.db"
             )
-                .addMigrations(LotteryDatabase.MIGRATION_1_2)
+                .addMigrations(LotteryDatabase.MIGRATION_1_2, LotteryDatabase.MIGRATION_2_3)
                 .build()
                 .also { instance = it }
         }
