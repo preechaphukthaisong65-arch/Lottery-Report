@@ -100,9 +100,12 @@ private val tabs = listOf("ภาพรวม", "ปฏิทิน", "ผลร
 @Composable
 private fun LotteryReportApp(repository: LotteryRepository) {
     var selectedTab by remember { mutableIntStateOf(0) }
+    val context = LocalContext.current
     val resultFlow = remember(repository) { repository.observeAllResults() }
     val scheduleFlow = remember(repository) { repository.observeSchedules() }
-    val eventFlow = remember(repository) { DatabaseProvider.get(LocalContext.current).verificationEventDao().observeRecent() }
+    val eventFlow = remember(repository, context) {
+        DatabaseProvider.get(context).verificationEventDao().observeRecent()
+    }
     val results by resultFlow.collectAsState(initial = emptyList())
     val schedules by scheduleFlow.collectAsState(initial = emptyList())
     val verificationEvents by eventFlow.collectAsState(initial = emptyList())
