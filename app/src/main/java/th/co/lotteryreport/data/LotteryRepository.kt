@@ -25,6 +25,9 @@ class LotteryRepository(
     fun observeSchedules(): Flow<List<DrawScheduleEntity>> =
         database.drawScheduleDao().observeAll()
 
+    suspend fun getSchedulesSnapshot(): List<DrawScheduleEntity> =
+        database.drawScheduleDao().getAll()
+
     suspend fun seedEstimatedSchedule(today: LocalDate = LocalDate.now(ZoneId.of("Asia/Bangkok"))): Int {
         val estimates = DrawScheduleGenerator.generate(today, 12)
         return database.drawScheduleDao().insertEstimates(estimates).count { it != -1L }

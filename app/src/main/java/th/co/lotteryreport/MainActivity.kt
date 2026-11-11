@@ -1,6 +1,9 @@
 package th.co.lotteryreport
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -51,6 +54,7 @@ import th.co.lotteryreport.data.local.DrawResultEntity
 import th.co.lotteryreport.data.local.DrawScheduleEntity
 import th.co.lotteryreport.domain.DrawResultValidator
 import th.co.lotteryreport.domain.PrizeValue
+import th.co.lotteryreport.notifications.DrawReminderScheduler
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -63,7 +67,13 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         lifecycleScope.launch {
-            runCatching { repository.seedEstimatedSchedule() }
+            runCatching {
+                repository.seedEstimatedSchedule()
+                val schedules = repository.getSchedulesSnapshot()
+                withContext(Dispatchers.IO) {
+                    DrawReminderScheduler.schedule(applicationContext, schedules)
+                }
+            }
         }
         setContent { MaterialTheme { LotteryReportApp(repository) } }
     }
@@ -193,6 +203,10 @@ private fun ScheduleScreen(items: List<DrawScheduleEntity>, repository: LotteryR
                             drawDate = ""
                             sourceUrl = ""
                             message = ""
+                            val schedules = repository.getSchedulesSnapshot()
+                            withContext(Dispatchers.IO) {
+                                DrawReminderScheduler.schedule(context, schedules)
+                            }
                         } else {
                             message = "บันทึกไม่ได้ ตรวจวันที่และลิงก์ HTTPS ของโดเมน glo.or.th"
                         }
@@ -352,6 +366,22 @@ private fun SettingsScreen(repository: LotteryRepository) {
     var message by remember { mutableStateOf("ข้อมูลสำรองเก็บเฉพาะในไฟล์ที่คุณเลือกบันทึก") }
     var pendingRestoreUri by remember { mutableStateOf<Uri?>(null) }
 
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted || Build.VERSION.SDK_INT < 33) {
+            scope.launch {
+                val schedules = repository.getSchedulesSnapshot()
+                withContext(Dispatchers.IO) {
+                    DrawReminderScheduler.schedule(context, schedules)
+                }
+                message = "ตั้งเวลาแจ้งเตือนก่อนวันออกรางวัลแล้ว"
+            }
+        } else {
+            message = "ยังไม่ได้รับสิทธิ์แจ้งเตือน กรุณาเปิดสิทธิ์ในการตั้งค่า Android"
+        }
+    }
+
     val exportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/json")
     ) { uri ->
@@ -421,7 +451,22 @@ private fun SettingsScreen(repository: LotteryRepository) {
             Text("ตั้งค่า", style = MaterialTheme.typography.titleLarge)
             Text("เขตเวลา: Asia/Bangkok")
             Text("ภาษา: ไทย")
-            Text("การแจ้งเตือน: ยังไม่เปิดใช้งาน")
+            Text("การแจ้งเตือน: ตั้งเตือนก่อนวันออกรางวัลเวลา 18:00 น. (เวลาไทย)")
+            Button(onClick = {
+                if (Build.VERSION.SDK_INT >= 33 &&
+                    context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                ) {
+                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                } else {
+                    scope.launch {
+                        val schedules = repository.getSchedulesSnapshot()
+                        withContext(Dispatchers.IO) {
+                            DrawReminderScheduler.schedule(context, schedules)
+                        }
+                        message = "ตั้งเวลาแจ้งเตือนก่อนวันออกรางวัลแล้ว"
+                    }
+                }
+            }) { Text("เปิด/ปรับการแจ้งเตือนวันออกรางวัล") }
             Text("ซิงก์อัตโนมัติ: ยังไม่เปิดใช้งาน")
             Text("แหล่งข้อมูล: สำนักงานสลากกินแบ่งรัฐบาล (GLO) — รอการเชื่อมต่อ")
             Spacer(Modifier.height(8.dp))
