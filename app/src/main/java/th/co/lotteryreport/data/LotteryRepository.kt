@@ -10,6 +10,7 @@ import th.co.lotteryreport.domain.PrizeValue
 import java.net.URI
 import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 import kotlinx.coroutines.flow.Flow
 
 class LotteryRepository(
@@ -28,7 +29,7 @@ class LotteryRepository(
      * Seeds ordinary 1st/16th dates as estimates for the next year.
      * INSERT IGNORE guarantees this bootstrap cannot overwrite official dates.
      */
-    suspend fun seedEstimatedSchedule(today: LocalDate = LocalDate.now()): Int {
+    suspend fun seedEstimatedSchedule(today: LocalDate = LocalDate.now(ZoneId.of("Asia/Bangkok"))): Int {
         val estimates = DrawScheduleGenerator.generate(today, 12)
         return database.drawScheduleDao().insertEstimates(estimates).count { it != -1L }
     }
