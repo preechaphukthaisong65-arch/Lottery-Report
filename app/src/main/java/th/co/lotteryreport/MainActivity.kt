@@ -1,5 +1,7 @@
 package th.co.lotteryreport
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -29,6 +31,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import th.co.lotteryreport.data.LotteryRepository
@@ -122,6 +125,7 @@ private fun OverviewScreen(resultCount: Int, scheduleCount: Int) {
 
 @Composable
 private fun ScheduleScreen(items: List<DrawScheduleEntity>) {
+    val context = LocalContext.current
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("ปฏิทินวันออกรางวัล", style = MaterialTheme.typography.titleLarge)
@@ -137,12 +141,16 @@ private fun ScheduleScreen(items: List<DrawScheduleEntity>) {
             }
             Text("วันปกติ 1 และ 16 เป็นเพียงวันประมาณการ จนกว่า GLO จะประกาศยืนยัน")
             Text("วันพิเศษหรือวันเลื่อนต้องรอประกาศจาก GLO")
+            Button(onClick = {
+                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.glo.or.th/service/faq/award")))
+            }) { Text("เปิดข้อมูลกำหนดวันจาก GLO") }
         }
     }
 }
 
 @Composable
 private fun ResultsScreen(items: List<DrawResultEntity>) {
+    val context = LocalContext.current
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("ผลรางวัล", style = MaterialTheme.typography.titleLarge)
@@ -157,6 +165,9 @@ private fun ResultsScreen(items: List<DrawResultEntity>) {
                 }
             }
             Text("ข้อมูลที่บันทึกจะเก็บไว้ในเครื่องและแสดงได้เมื่อออฟไลน์")
+            Button(onClick = {
+                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.glo.or.th/mission/reward-payment/check-reward")))
+            }) { Text("เปิดหน้าตรวจผลรางวัลทางการ") }
         }
     }
 }

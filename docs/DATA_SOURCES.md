@@ -1,22 +1,42 @@
 # Data source and verification policy
 
-## Official result source
+## Official result sources
 
-The Government Lottery Office (GLO) Data Catalog publishes the dataset "ข้อมูลผลการออกรางวัลสลากกินแบ่งรัฐบาล" and documents API resources for latest results and date-based result lookup:
-
+GLO Data Catalog dataset:
 - Dataset: https://gdcatalog.glo.or.th/dataset/dataset_c4-9_01
-- Official result checking: https://www.glo.or.th/mission/reward-payment/check-reward
-- GLO FAQ: https://www.glo.or.th/service/faq/award
+- Latest-results API resource page: https://gdcatalog.glo.or.th/dataset/84c73398-f1c2-42b3-b616-34f670cb8c37/resource/0846af20-af93-498c-91d9-644a885733f7
+- Date-based result lookup API resource page: https://gdcatalog.glo.or.th/dataset/dataset_c4-9_01/resource/a4d750a4-f8a0-41f3-b62f-99ad97cd680a
+- Official result checking page: https://www.glo.or.th/mission/reward-payment/check-reward
+- Official draw schedule FAQ: https://www.glo.or.th/service/faq/award
+- GLO result listing page: https://www.glo.or.th/mission/awarding/orderby-time
 
-The catalog identifies the dataset as public data and lists a Creative Commons Non-Commercial (Any) license. The app must remain non-commercial unless GLO provides written permission or a license that allows the intended use. Do not add advertising, paid access, or commercial redistribution based on this dataset without resolving the license first.
+The catalog describes the dataset as public data and lists a Creative Commons Non-Commercial (Any) license. Its resource pages list access condition as "GLO Public Used". The app is intended for personal, non-commercial use only, without advertising or paid access. This is not a substitute for complying with the full license terms. Any redistribution, commercial use, or monetization requires a separate license review and written clarification from GLO where applicable. Dataset contact listed by the catalog: callcenter@glo.or.th.
+
+## What has been verified
+
+- GLO publishes catalog entries describing API resources for latest results and date-based lookup.
+- The public resource detail pages currently expose no concrete request URL, HTTP method, required parameters, response schema, or authentication contract in the page content available for verification.
+- The official result-checking page is accessible and provides year, draw-date, and ticket-number inputs.
+- GLO FAQ states ordinary draws occur on the 1st and 16th, with stated exceptions and official announcements when dates are moved.
+- The official result listing page identifies prize sections including first prize, front-three, last-three, last-two, adjacent first prize, and prize tiers two through five.
+
+## Integration decision
+
+Do not implement a guessed API endpoint or rely on a third-party endpoint as if it were official.
+
+Until GLO provides a verifiable API contract and a live response can be validated:
+- The app provides direct links to GLO's official result-checking page and draw-date FAQ.
+- The in-app 1st/16th calendar entries remain ESTIMATED only.
+- Special dates and moved draws must not be inferred or promoted to CONFIRMED from unofficial sources.
+- Automatic result retrieval and automatic official schedule confirmation remain disabled.
+
+To reopen API integration, obtain from GLO the exact endpoint, HTTP method, parameters, response schema, usage limits, and applicable license/terms. Then capture real responses for multiple draw dates and create parser fixtures before enabling automatic saving.
 
 ## Schedule source
 
-GLO's FAQ describes ordinary draw dates as the 1st and 16th of each month, with exceptions and official announcements when dates are moved. The app now seeds these ordinary dates for the next 12 months as ESTIMATED only. It does not infer special dates, holiday moves, or official confirmation. A date becomes CONFIRMED only after an attributable GLO announcement is retrieved and validated.
+GLO FAQ: https://www.glo.or.th/service/faq/award
 
-## Result API integration status
-
-The GLO Data Catalog lists API resources for latest results and date-based lookup. The resource detail pages currently expose no machine-readable endpoint/schema in the catalog page itself. A candidate endpoint found in third-party implementations is not treated as a verified contract. The application must not mark results official until the request method, parameters, response schema, and provenance have been verified against a live GLO response and tested with captured fixtures.
+Ordinary dates are the 1st and 16th of each month, subject to exceptions described by GLO and official notices for moved draws. The app seeds ordinary dates for the next 12 months as ESTIMATED only. It does not infer special dates, holiday moves, or official confirmation.
 
 ## Safety requirements
 
@@ -24,7 +44,7 @@ The GLO Data Catalog lists API resources for latest results and date-based looku
 - Never infer a changed date from an unofficial calendar.
 - Never replace a previously verified result with an empty, partial, malformed, or failed response.
 - Store the original source URL and the time the response was verified.
-- Structural validation is not proof of authenticity. The app must retain source provenance and must not label parsed data official until the source adapter has been verified against real GLO responses.
+- Structural validation is not proof of authenticity. Do not label parsed data official until the source adapter is verified against real GLO responses.
 - Do not embed API credentials or private keys in the application.
-- Do not scrape or redistribute data in a way that conflicts with the source terms.
+- Do not scrape or redistribute data in a way that conflicts with source terms.
 - The app is independent and is not an official GLO application.
