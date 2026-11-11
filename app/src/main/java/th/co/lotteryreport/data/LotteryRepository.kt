@@ -57,10 +57,19 @@ class LotteryRepository(
         }.getOrDefault(false)
     }
 
-    suspend fun saveSchedule(item: DrawScheduleEntity): Boolean {
+    suspend fun saveSchedule(
+        item: DrawScheduleEntity,
+        supersedesEstimatedDate: String? = null
+    ): Boolean {
         if (runCatching { LocalDate.parse(item.drawDate) }.isFailure) return false
         if (item.checkedAtEpochMillis <= 0) return false
         if (item.status !in setOf("ESTIMATED", "CONFIRMED")) return false
+        if (supersedesEstimatedDate != null) {
+            if (supersedesEstimatedDate == item.drawDate ||
+                runCatching { LocalDate.parse(supersedesEstimatedDate) }.isFailure
+            ) return false
+            if (item.status != "CONFIRMED") return false
+        }
 
         if (item.status == "CONFIRMED") {
             if (!isGloHttpsUrl(item.sourceUrl)) return false
@@ -83,6 +92,13 @@ class LotteryRepository(
                 } else if (item.checkedAtEpochMillis <= existing.checkedAtEpochMillis) {
                     return@withTransaction false
                 }
+            }
+            if (supersedesEstimatedDate != null) {
+                val previous = dao.findByDate(supersedesEstimatedDate) ?: return@withTransaction false
+                if (previous.status != "ESTIMATED" || previous.isOfficiallyConfirmed) {
+                    return@withTransaction false
+                }
+                dao.deleteEstimatedByDate(supersedesEstimatedDate)
             }
             dao.upsert(item)
             true

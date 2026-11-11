@@ -47,6 +47,9 @@ interface DrawScheduleDao {
     @Query("DELETE FROM draw_schedules")
     suspend fun deleteAll()
 
+    @Query("DELETE FROM draw_schedules WHERE drawDate = :drawDate AND status = 'ESTIMATED'")
+    suspend fun deleteEstimatedByDate(drawDate: String): Int
+
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertEstimates(items: List<DrawScheduleEntity>): List<Long>
 }

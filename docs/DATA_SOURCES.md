@@ -26,8 +26,10 @@ Do not implement a guessed API endpoint or rely on a third-party endpoint as if 
 
 Until GLO provides a verifiable API contract and a live response can be validated:
 - The app provides direct links to GLO's official result-checking page and draw-date FAQ.
-- The in-app 1st/16th calendar entries remain ESTIMATED only.
-- Special dates and moved draws must not be inferred or promoted to CONFIRMED from unofficial sources.
+- The in-app 1st/16th calendar entries remain ESTIMATED until the user checks an official GLO notice.
+- A user may manually record a CONFIRMED date only after checking the GLO notice, with the official GLO URL stored as provenance. This is a user-attested confirmation, not an automatic GLO verification.
+- When a draw is moved, the user can identify the superseded estimated date; the app removes only that estimated row and reschedules local reminders.
+- Local reminders are scheduled for 18:00 Bangkok time on the day before each saved draw date. Android may delay delivery under battery restrictions.
 - Automatic result retrieval and automatic official schedule confirmation remain disabled.
 
 To reopen API integration, obtain from GLO the exact endpoint, HTTP method, parameters, response schema, usage limits, and applicable license/terms. Then capture real responses for multiple draw dates and create parser fixtures before enabling automatic saving.
@@ -36,7 +38,7 @@ To reopen API integration, obtain from GLO the exact endpoint, HTTP method, para
 
 GLO FAQ: https://www.glo.or.th/service/faq/award
 
-Ordinary dates are the 1st and 16th of each month, subject to exceptions described by GLO and official notices for moved draws. The app seeds ordinary dates for the next 12 months as ESTIMATED only. It does not infer special dates, holiday moves, or official confirmation.
+Ordinary dates are the 1st and 16th of each month, subject to exceptions described by GLO and official notices for moved draws. The app seeds ordinary dates for the next 12 months as ESTIMATED only. A user can record a date as CONFIRMED after manually checking a GLO notice and saving its URL. The app does not fetch or validate that announcement automatically.
 
 ## Safety requirements
 

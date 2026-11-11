@@ -156,6 +156,7 @@ private fun ScheduleScreen(items: List<DrawScheduleEntity>, repository: LotteryR
     var showConfirmation by remember { mutableStateOf(false) }
     var drawDate by remember { mutableStateOf("") }
     var sourceUrl by remember { mutableStateOf("") }
+    var previousDrawDate by remember { mutableStateOf("") }
     var message by remember { mutableStateOf("") }
     val dateFormatter = remember {
         DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm").withZone(ZoneId.of("Asia/Bangkok"))
@@ -182,6 +183,14 @@ private fun ScheduleScreen(items: List<DrawScheduleEntity>, repository: LotteryR
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
+                    OutlinedTextField(
+                        value = previousDrawDate,
+                        onValueChange = { previousDrawDate = it.trim() },
+                        label = { Text("วันเดิมที่ถูกเลื่อน (ไม่บังคับ)") },
+                        placeholder = { Text("YYYY-MM-DD — ลบเฉพาะวันประมาณการเดิม") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                     if (message.isNotBlank()) Text(message, color = MaterialTheme.colorScheme.error)
                 }
             },
@@ -196,12 +205,14 @@ private fun ScheduleScreen(items: List<DrawScheduleEntity>, repository: LotteryR
                                 sourceUrl = sourceUrl,
                                 sourcePublishedAtEpochMillis = null,
                                 checkedAtEpochMillis = now
-                            )
+                            ),
+                            supersedesEstimatedDate = previousDrawDate.takeIf { it.isNotBlank() }
                         )
                         if (saved) {
                             showConfirmation = false
                             drawDate = ""
                             sourceUrl = ""
+                            previousDrawDate = ""
                             message = ""
                             val schedules = repository.getSchedulesSnapshot()
                             withContext(Dispatchers.IO) {

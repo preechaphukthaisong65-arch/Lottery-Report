@@ -14,8 +14,8 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import th.co.lotteryreport.MainActivity
 import th.co.lotteryreport.data.local.DatabaseProvider
-import th.co.lotteryreport.domain.DrawReminderTime
-import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 
 class DrawReminderWorker(
     appContext: Context,
@@ -24,8 +24,8 @@ class DrawReminderWorker(
 
     override suspend fun doWork(): Result {
         val drawDate = inputData.getString(KEY_DRAW_DATE) ?: return Result.failure()
-        val delay = DrawReminderTime.delayMillis(drawDate, Instant.now())
-        if (delay == null) return Result.success()
+        val drawDay = runCatching { LocalDate.parse(drawDate) }.getOrNull() ?: return Result.failure()
+        if (drawDay.isBefore(LocalDate.now(ZoneId.of("Asia/Bangkok")))) return Result.success()
 
         val schedule = runCatching {
             DatabaseProvider.get(applicationContext).drawScheduleDao().findByDate(drawDate)
