@@ -13,6 +13,9 @@ object DatabaseProvider {
                 context.applicationContext,
                 LotteryDatabase::class.java,
                 "lottery-report.db"
-            ).build().also { instance = it }
+            )
+                .addMigrations(LotteryDatabase.MIGRATION_1_2)
+                .build()
+                .also { instance = it }
         }
 }
