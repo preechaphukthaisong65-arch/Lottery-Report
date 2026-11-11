@@ -192,7 +192,7 @@ private fun OverviewScreen(resultCount: Int, scheduleCount: Int, events: List<Ve
             Text("รายการผลรางวัลที่บันทึก: $resultCount")
             Text("เขตเวลา: Asia/Bangkok")
             Text("อินเทอร์เน็ต: ${if (online) "ออนไลน์" else "ออฟไลน์"}")
-            Text("การเชื่อมต่อ GLO: ยังไม่เปิดใช้งาน")
+            Text("บอทตรวจสอบแหล่งข้อมูลผ่าน GitHub")
         }
     }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -206,9 +206,9 @@ private fun OverviewScreen(resultCount: Int, scheduleCount: Int, events: List<Ve
                 Text("ยังไม่มีเหตุผิดปกติจากบอท หรือยังไม่ได้รับรายงานรอบแรก")
             } else {
                 events.take(5).forEach { event ->
-                    Text("\${event.checkedAt} · \${event.status}")
+                    Text("${event.checkedAt} · ${event.status}")
                     Text(event.message, style = MaterialTheme.typography.bodyMedium)
-                    if (event.sources.isNotBlank()) Text("แหล่งข้อมูล: \${event.sources}", style = MaterialTheme.typography.bodySmall)
+                    if (event.sources.isNotBlank()) Text("แหล่งข้อมูล: ${event.sources}", style = MaterialTheme.typography.bodySmall)
                 }
             }
         }
