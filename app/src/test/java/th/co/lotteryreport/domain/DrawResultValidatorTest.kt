@@ -37,7 +37,7 @@ class DrawResultValidatorTest {
 
     @Test fun rejectsDuplicateNumberWithinGroup() {
         val invalid = complete.toMutableList().apply {
-            set(1, PrizeValue("FRONT_THREE", "123"))
+            set(2, PrizeValue("FRONT_THREE", "123"))
         }
         assertFalse(DrawResultValidator.validate(drawDate, invalid))
     }
