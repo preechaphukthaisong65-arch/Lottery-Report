@@ -11,7 +11,7 @@ The bot checks the GLO result page, GLO draw listing, GLO award FAQ, Sanook, Tha
 - Thairath: https://en.thairath.co.th/lottery/latest-result
 - Kapook: https://lottery.kapook.com/
 
-The results scan is scheduled every five minutes from 16:00 to 16:55 Thailand time. The calendar/source scan is scheduled daily at 16:15 Thailand time. GitHub scheduled workflows can be delayed.
+The results scan is scheduled every five minutes from 16:00 to 17:55 Thailand time. The calendar/source scan is scheduled daily at 16:15 Thailand time. A push that changes verifier code also performs an initial results-source scan. GitHub scheduled workflows can be delayed.
 
 Each run records retrieval time, requested/final URL, HTTP status, source class, parser version, SHA-256 of the fetched response, and a short text excerpt. Reports are written to \`data/verification/\`. No user or device data is collected.
 
