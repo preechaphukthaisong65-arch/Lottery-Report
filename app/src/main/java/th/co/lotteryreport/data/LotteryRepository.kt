@@ -5,6 +5,7 @@ import th.co.lotteryreport.data.local.DrawResultEntity
 import th.co.lotteryreport.data.local.DrawScheduleEntity
 import th.co.lotteryreport.data.local.LotteryDatabase
 import th.co.lotteryreport.domain.DrawResultValidator
+import th.co.lotteryreport.domain.DrawScheduleGenerator
 import th.co.lotteryreport.domain.PrizeValue
 import java.net.URI
 import java.time.Instant
@@ -22,6 +23,15 @@ class LotteryRepository(
 
     fun observeSchedules(): Flow<List<DrawScheduleEntity>> =
         database.drawScheduleDao().observeAll()
+
+    /**
+     * Seeds ordinary 1st/16th dates as estimates for the next year.
+     * INSERT IGNORE guarantees this bootstrap cannot overwrite official dates.
+     */
+    suspend fun seedEstimatedSchedule(today: LocalDate = LocalDate.now()): Int {
+        val estimates = DrawScheduleGenerator.generate(today, 12)
+        return database.drawScheduleDao().insertEstimates(estimates).count { it != -1L }
+    }
 
     suspend fun saveSchedule(item: DrawScheduleEntity): Boolean {
         if (runCatching { LocalDate.parse(item.drawDate) }.isFailure) return false

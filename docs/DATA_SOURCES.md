@@ -8,11 +8,15 @@ The Government Lottery Office (GLO) Data Catalog publishes the dataset "ข้�
 - Official result checking: https://www.glo.or.th/mission/reward-payment/check-reward
 - GLO FAQ: https://www.glo.or.th/service/faq/award
 
-The dataset page identifies the information as public data and lists a Creative Commons Non-Commercial (Any) license. Any redistribution or commercial use must be reviewed against the actual license terms before release.
+The catalog identifies the dataset as public data and lists a Creative Commons Non-Commercial (Any) license. The app must remain non-commercial unless GLO provides written permission or a license that allows the intended use. Do not add advertising, paid access, or commercial redistribution based on this dataset without resolving the license first.
 
 ## Schedule source
 
-GLO's FAQ describes the ordinary draw dates as the 1st and 16th of each month, with stated exceptions and official announcements when dates are moved. Therefore, a computed calendar is only an estimate. A date must not be labeled officially confirmed unless an attributable GLO announcement or source explicitly confirms it.
+GLO's FAQ describes ordinary draw dates as the 1st and 16th of each month, with exceptions and official announcements when dates are moved. The app now seeds these ordinary dates for the next 12 months as ESTIMATED only. It does not infer special dates, holiday moves, or official confirmation. A date becomes CONFIRMED only after an attributable GLO announcement is retrieved and validated.
+
+## Result API integration status
+
+The GLO Data Catalog lists API resources for latest results and date-based lookup. The resource detail pages currently expose no machine-readable endpoint/schema in the catalog page itself. A candidate endpoint found in third-party implementations is not treated as a verified contract. The application must not mark results official until the request method, parameters, response schema, and provenance have been verified against a live GLO response and tested with captured fixtures.
 
 ## Safety requirements
 
@@ -22,4 +26,5 @@ GLO's FAQ describes the ordinary draw dates as the 1st and 16th of each month, w
 - Store the original source URL and the time the response was verified.
 - Structural validation is not proof of authenticity. The app must retain source provenance and must not label parsed data official until the source adapter has been verified against real GLO responses.
 - Do not embed API credentials or private keys in the application.
+- Do not scrape or redistribute data in a way that conflicts with the source terms.
 - The app is independent and is not an official GLO application.

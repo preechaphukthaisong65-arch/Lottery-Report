@@ -3,6 +3,7 @@ package th.co.lotteryreport
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.lifecycle.lifecycleScope
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -29,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import th.co.lotteryreport.data.LotteryRepository
 import th.co.lotteryreport.data.local.DatabaseProvider
 import th.co.lotteryreport.data.local.DrawResultEntity
@@ -41,6 +43,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        lifecycleScope.launch {
+            runCatching { repository.seedEstimatedSchedule() }
+        }
         setContent { MaterialTheme { LotteryReportApp(repository) } }
     }
 }
@@ -127,10 +132,11 @@ private fun ScheduleScreen(items: List<DrawScheduleEntity>) {
                 items.forEach { item ->
                     Text(item.drawDate)
                     Text(if (item.isOfficiallyConfirmed) "ยืนยันจากแหล่งทางการ" else "วันประมาณการ")
-                    Text("ตรวจสอบล่าสุด: ${item.checkedAtEpochMillis}")
+                    Text("ตรวจสอบล่าสุด: \${item.checkedAtEpochMillis}")
                 }
             }
-            Text("แหล่งข้อมูลกำหนดการยังไม่ได้เชื่อมต่อ")
+            Text("วันปกติ 1 และ 16 เป็นเพียงวันประมาณการ จนกว่า GLO จะประกาศยืนยัน")
+            Text("วันพิเศษหรือวันเลื่อนต้องรอประกาศจาก GLO")
         }
     }
 }
@@ -146,7 +152,7 @@ private fun ResultsScreen(items: List<DrawResultEntity>) {
                 items.groupBy { it.drawDate }.forEach { (date, values) ->
                     Text("งวดวันที่ $date", style = MaterialTheme.typography.titleMedium)
                     values.forEach { value ->
-                        Text("${value.category}: ${value.number}")
+                        Text("\${value.category}: \${value.number}")
                     }
                 }
             }

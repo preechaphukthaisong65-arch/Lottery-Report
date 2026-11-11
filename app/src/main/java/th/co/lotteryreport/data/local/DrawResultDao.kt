@@ -28,4 +28,8 @@ interface DrawScheduleDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(item: DrawScheduleEntity)
+
+    // Estimated dates must never replace an existing official confirmation.
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertEstimates(items: List<DrawScheduleEntity>): List<Long>
 }
