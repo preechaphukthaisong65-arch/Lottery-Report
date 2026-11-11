@@ -19,7 +19,7 @@
 - ยังไม่ได้เชื่อมต่อ API อัตโนมัติของ GLO
 - มีการแจ้งเตือนในเครื่องก่อนวันออกรางวัลตามกำหนดการที่บันทึก (ต้องอนุญาตการแจ้งเตือนบน Android)
 - ยังไม่มีการซิงก์ข้อมูลหรือดึงผลรางวัลจาก GLO อัตโนมัติ
-- Release 0.1.0 เคยสร้างแบบ signed และติดตั้งทดสอบแล้ว; Release 0.2.0 ยังไม่ถูกสร้าง
+- Release 0.1.0 เคยสร้างแบบ signed และติดตั้งทดสอบแล้ว; กำลังเตรียม Release 0.2.0 (versionCode 2) โดยบังคับตรวจ SHA-256 certificate ให้ตรงกับ 0.1.0 ก่อนสร้างไฟล์
 
 ## แหล่งข้อมูลและข้อจำกัด
 
@@ -39,7 +39,7 @@ GLO Data Catalog แสดงรายการ API Resource สำหรับ�
 - WorkManager dependency เตรียมไว้สำหรับงานเบื้องหลัง
 - เวลาอ้างอิง: Asia/Bangkok
 - applicationId: th.co.lotteryreport
-- versionCode: 1, versionName: 0.1.0
+- versionCode: 2, versionName: 0.2.0
 
 ## ความปลอดภัยและความถูกต้อง
 

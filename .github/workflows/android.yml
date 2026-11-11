@@ -84,7 +84,13 @@ jobs:
           set -euo pipefail
           APK="app/build/outputs/apk/release/app-release.apk"
           test -s "$APK"
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK"
+          VERIFY_OUTPUT="$("$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK")"
+          printf '%s\n' "$VERIFY_OUTPUT"
+          EXPECTED_CERT_SHA256="f08f72dd2d105db110180657f793db197aefd49c7384fed49fbfeaa69bc32e9c"
+          if ! printf '%s\n' "$VERIFY_OUTPUT" | grep -Fq "Signer #1 certificate SHA-256 digest: $EXPECTED_CERT_SHA256"; then
+            echo "::error::Release signing certificate does not match the installed 0.1.0 signing identity."
+            exit 1
+          fi
       - name: Upload signed release APK
         uses: actions/upload-artifact@v4
         with:
