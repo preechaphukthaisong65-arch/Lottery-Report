@@ -104,7 +104,7 @@ private fun OverviewScreen() {
 
 @Composable
 private fun SummaryCard(title: String, value: String) {
-    Card(Modifier.weight(1f)) {
+    Card(Modifier.fillMaxWidth(0.5f)) {
         Column(Modifier.padding(12.dp)) {
             Text(title, style = MaterialTheme.typography.titleSmall)
             Text(value, style = MaterialTheme.typography.bodyMedium)
