@@ -16,7 +16,13 @@ interface DrawResultDao {
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAll(items: List<DrawResultEntity>): List<Long>
+}
 
-    @Query("DELETE FROM draw_results WHERE drawDate = :drawDate")
-    suspend fun deleteByDrawDate(drawDate: String)
+@Dao
+interface DrawScheduleDao {
+    @Query("SELECT * FROM draw_schedules ORDER BY drawDate DESC")
+    fun observeAll(): Flow<List<DrawScheduleEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(item: DrawScheduleEntity)
 }
