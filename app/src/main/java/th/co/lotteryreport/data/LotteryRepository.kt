@@ -2,10 +2,13 @@ package th.co.lotteryreport.data
 
 import androidx.room.withTransaction
 import th.co.lotteryreport.data.local.DrawResultEntity
+import th.co.lotteryreport.data.local.DrawScheduleEntity
 import th.co.lotteryreport.data.local.LotteryDatabase
 import th.co.lotteryreport.domain.DrawResultValidator
 import th.co.lotteryreport.domain.PrizeValue
+import java.net.URI
 import java.time.Instant
+import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
 
 class LotteryRepository(
@@ -17,9 +20,32 @@ class LotteryRepository(
     fun observeResultsFor(drawDate: String): Flow<List<DrawResultEntity>> =
         database.drawResultDao().observeByDrawDate(drawDate)
 
+    fun observeSchedules(): Flow<List<DrawScheduleEntity>> =
+        database.drawScheduleDao().observeAll()
+
+    suspend fun saveSchedule(item: DrawScheduleEntity): Boolean {
+        if (runCatching { LocalDate.parse(item.drawDate) }.isFailure) return false
+        if (item.status !in setOf("ESTIMATED", "CONFIRMED")) return false
+
+        if (item.status == "CONFIRMED") {
+            val host = runCatching { URI(item.sourceUrl ?: return false).host }.getOrNull()
+            if (host != "glo.or.th" && host?.endsWith(".glo.or.th") != true) return false
+        } else if (!item.sourceUrl.isNullOrBlank()) {
+            return false
+        }
+
+        val dao = database.drawScheduleDao()
+        val existing = dao.findByDate(item.drawDate)
+        if (existing?.isOfficiallyConfirmed == true && item.status == "ESTIMATED") {
+            return false
+        }
+        dao.upsert(item)
+        return true
+    }
+
     /**
      * Stores only structurally complete, already source-verified result groups.
-     * Existing records are never replaced by a later response.
+     * Existing result rows are never replaced by a later response.
      */
     suspend fun saveVerifiedResults(
         drawDate: String,
@@ -27,6 +53,8 @@ class LotteryRepository(
         sourceUrl: String,
         verifiedAt: Instant = Instant.now()
     ): Boolean {
+        val host = runCatching { URI(sourceUrl).host }.getOrNull()
+        if (host != "glo.or.th" && host?.endsWith(".glo.or.th") != true) return false
         if (!sourceUrl.startsWith("https://")) return false
         if (!DrawResultValidator.validate(drawDate, values)) return false
 
