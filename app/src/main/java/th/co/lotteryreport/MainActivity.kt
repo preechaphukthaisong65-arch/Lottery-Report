@@ -137,7 +137,6 @@ private fun LotteryReportApp(repository: LotteryRepository) {
 }
 
 @Composable
-@Composable
 private fun rememberInternetConnectivity(): Boolean {
     val context = LocalContext.current
     val manager = remember(context) {
