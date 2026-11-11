@@ -52,6 +52,8 @@ import th.co.lotteryreport.data.local.DrawScheduleEntity
 import th.co.lotteryreport.domain.DrawResultValidator
 import th.co.lotteryreport.domain.PrizeValue
 import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 class MainActivity : ComponentActivity() {
     private val repository: LotteryRepository by lazy {
@@ -103,7 +105,7 @@ private fun LotteryReportApp(repository: LotteryRepository) {
                 Text("ติดตามกำหนดวันออกรางวัลและผลสลากกินแบ่งรัฐบาล")
                 when (selectedTab) {
                     0 -> OverviewScreen(results.size, schedules.size)
-                    1 -> ScheduleScreen(schedules)
+                    1 -> ScheduleScreen(schedules, repository)
                     2 -> ResultsScreen(results, repository)
                     else -> SettingsScreen(repository)
                 }
@@ -138,8 +140,71 @@ private fun OverviewScreen(resultCount: Int, scheduleCount: Int) {
 }
 
 @Composable
-private fun ScheduleScreen(items: List<DrawScheduleEntity>) {
+private fun ScheduleScreen(items: List<DrawScheduleEntity>, repository: LotteryRepository) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var showConfirmation by remember { mutableStateOf(false) }
+    var drawDate by remember { mutableStateOf("") }
+    var sourceUrl by remember { mutableStateOf("") }
+    var message by remember { mutableStateOf("") }
+    val dateFormatter = remember {
+        DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm").withZone(ZoneId.of("Asia/Bangkok"))
+    }
+
+    if (showConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showConfirmation = false },
+            title = { Text("ยืนยันวันออกรางวัลจาก GLO") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("ตรวจสอบประกาศจากเว็บไซต์ GLO ก่อนกรอก ระบบจะเก็บ URL ต้นทางไว้กับวันที่")
+                    OutlinedTextField(
+                        value = drawDate,
+                        onValueChange = { drawDate = it.trim() },
+                        label = { Text("วันที่งวด YYYY-MM-DD") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = sourceUrl,
+                        onValueChange = { sourceUrl = it.trim() },
+                        label = { Text("ลิงก์ประกาศ GLO") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    if (message.isNotBlank()) Text(message, color = MaterialTheme.colorScheme.error)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val now = System.currentTimeMillis()
+                    scope.launch {
+                        val saved = repository.saveSchedule(
+                            DrawScheduleEntity(
+                                drawDate = drawDate,
+                                status = "CONFIRMED",
+                                sourceUrl = sourceUrl,
+                                sourcePublishedAtEpochMillis = now,
+                                checkedAtEpochMillis = now
+                            )
+                        )
+                        if (saved) {
+                            showConfirmation = false
+                            drawDate = ""
+                            sourceUrl = ""
+                            message = ""
+                        } else {
+                            message = "บันทึกไม่ได้ ตรวจวันที่และลิงก์ HTTPS ของโดเมน glo.or.th"
+                        }
+                    }
+                }) { Text("บันทึกวันยืนยัน") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showConfirmation = false }) { Text("ยกเลิก") }
+            }
+        )
+    }
+
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("ปฏิทินวันออกรางวัล", style = MaterialTheme.typography.titleLarge)
@@ -148,13 +213,19 @@ private fun ScheduleScreen(items: List<DrawScheduleEntity>) {
                 Text("จะไม่สร้างวันยืนยันจากการคาดเดา")
             } else {
                 items.forEach { item ->
-                    Text(item.drawDate)
-                    Text(if (item.isOfficiallyConfirmed) "ยืนยันจากแหล่งทางการ" else "วันประมาณการ")
-                    Text("ตรวจสอบล่าสุด: ${item.checkedAtEpochMillis}")
+                    Text(item.drawDate, style = MaterialTheme.typography.titleMedium)
+                    Text(if (item.isOfficiallyConfirmed) "ยืนยันจากประกาศ GLO (ผู้ใช้ตรวจสอบและบันทึก)" else "วันประมาณการ")
+                    Text("ตรวจสอบล่าสุด: ${dateFormatter.format(Instant.ofEpochMilli(item.checkedAtEpochMillis))}")
+                    if (item.isOfficiallyConfirmed && !item.sourceUrl.isNullOrBlank()) {
+                        TextButton(onClick = {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(item.sourceUrl)))
+                        }) { Text("เปิดประกาศต้นทาง") }
+                    }
                 }
             }
-            Text("วันปกติ 1 และ 16 เป็นเพียงวันประมาณการ จนกว่า GLO จะประกาศยืนยัน")
-            Text("วันพิเศษหรือวันเลื่อนต้องรอประกาศจาก GLO")
+            Text("วันปกติ 1 และ 16 เป็นเพียงวันประมาณการ จนกว่าจะตรวจสอบประกาศจริงจาก GLO")
+            Text("วันพิเศษหรือวันเลื่อนต้องยึดประกาศจาก GLO เท่านั้น")
+            Button(onClick = { showConfirmation = true }) { Text("เพิ่ม/ยืนยันวันจากประกาศ GLO") }
             Button(onClick = {
                 context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.glo.or.th/service/faq/award")))
             }) { Text("เปิดข้อมูลกำหนดวันจาก GLO") }
