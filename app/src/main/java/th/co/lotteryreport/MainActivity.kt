@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -24,6 +25,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -32,6 +34,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -46,6 +49,9 @@ import th.co.lotteryreport.data.LotteryRepository
 import th.co.lotteryreport.data.local.DatabaseProvider
 import th.co.lotteryreport.data.local.DrawResultEntity
 import th.co.lotteryreport.data.local.DrawScheduleEntity
+import th.co.lotteryreport.domain.DrawResultValidator
+import th.co.lotteryreport.domain.PrizeValue
+import java.time.Instant
 
 class MainActivity : ComponentActivity() {
     private val repository: LotteryRepository by lazy {
@@ -98,7 +104,7 @@ private fun LotteryReportApp(repository: LotteryRepository) {
                 when (selectedTab) {
                     0 -> OverviewScreen(results.size, schedules.size)
                     1 -> ScheduleScreen(schedules)
-                    2 -> ResultsScreen(results)
+                    2 -> ResultsScreen(results, repository)
                     else -> SettingsScreen(repository)
                 }
                 Spacer(Modifier.height(8.dp))
@@ -156,14 +162,101 @@ private fun ScheduleScreen(items: List<DrawScheduleEntity>) {
     }
 }
 
+private val prizeInputDefinitions = listOf(
+    "FIRST_PRIZE" to "รางวัลที่ 1 — 6 หลัก จำนวน 1 เลข",
+    "FRONT_THREE" to "เลขหน้า 3 ตัว — จำนวน 2 เลข",
+    "LAST_THREE" to "เลขท้าย 3 ตัว — จำนวน 2 เลข",
+    "LAST_TWO" to "เลขท้าย 2 ตัว — จำนวน 1 เลข",
+    "SECOND_PRIZE" to "รางวัลที่ 2 — จำนวน 5 เลข",
+    "THIRD_PRIZE" to "รางวัลที่ 3 — จำนวน 10 เลข",
+    "FOURTH_PRIZE" to "รางวัลที่ 4 — จำนวน 50 เลข",
+    "FIFTH_PRIZE" to "รางวัลที่ 5 — จำนวน 100 เลข",
+    "NEARBY_FIRST_PRIZE" to "เลขข้างเคียงรางวัลที่ 1 — จำนวน 2 เลข"
+)
+
 @Composable
-private fun ResultsScreen(items: List<DrawResultEntity>) {
+private fun ResultsScreen(items: List<DrawResultEntity>, repository: LotteryRepository) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var showEntry by remember { mutableStateOf(false) }
+    var drawDate by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf("") }
+    val numberInputs = remember { mutableStateListOf<String>().apply { repeat(9) { add("") } } }
+
+    if (showEntry) {
+        AlertDialog(
+            onDismissRequest = { showEntry = false },
+            title = { Text("บันทึกผลรางวัลที่ตรวจสอบแล้ว") },
+            text = {
+                Column(
+                    modifier = Modifier.heightIn(max = 520.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text("เปิดผลรางวัลจากเว็บไซต์ GLO และตรวจเลขทุกหมวดก่อนกรอก วันที่ใช้รูปแบบ YYYY-MM-DD")
+                    OutlinedTextField(
+                        value = drawDate,
+                        onValueChange = { drawDate = it.trim() },
+                        label = { Text("วันที่งวด เช่น 2026-11-16") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    prizeInputDefinitions.forEachIndexed { index, definition ->
+                        OutlinedTextField(
+                            value = numberInputs[index],
+                            onValueChange = { numberInputs[index] = it },
+                            label = { Text(definition.second) },
+                            placeholder = { Text("คั่นแต่ละเลขด้วยเครื่องหมายจุลภาค") },
+                            minLines = 1,
+                            maxLines = 3,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                    if (errorMessage.isNotBlank()) {
+                        Text(errorMessage, color = MaterialTheme.colorScheme.error)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val values = prizeInputDefinitions.flatMapIndexed { index, definition ->
+                        numberInputs[index]
+                            .split(Regex("[,\\s]+"))
+                            .filter { it.isNotBlank() }
+                            .map { PrizeValue(definition.first, it) }
+                    }
+                    if (!DrawResultValidator.validate(drawDate, values)) {
+                        errorMessage = "ข้อมูลไม่ครบหรือรูปแบบไม่ถูกต้อง ตรวจจำนวนเลขและจำนวนหลักของทุกหมวด"
+                    } else {
+                        errorMessage = ""
+                        scope.launch {
+                            val saved = repository.saveVerifiedResults(
+                                drawDate = drawDate,
+                                values = values,
+                                sourceUrl = "https://www.glo.or.th/mission/reward-payment/check-reward",
+                                verifiedAt = Instant.now()
+                            )
+                            if (saved) {
+                                showEntry = false
+                                numberInputs.indices.forEach { numberInputs[it] = "" }
+                                drawDate = ""
+                            } else {
+                                errorMessage = "บันทึกไม่ได้: งวดนี้อาจมีข้อมูลอยู่แล้ว หรือข้อมูลไม่ผ่านการตรวจสอบ"
+                            }
+                        }
+                    }
+                }) { Text("ตรวจสอบและบันทึก") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEntry = false }) { Text("ยกเลิก") }
+            }
+        )
+    }
+
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("ผลรางวัล", style = MaterialTheme.typography.titleLarge)
             if (items.isEmpty()) {
-                Text("ยังไม่มีผลรางวัลที่ผ่านการตรวจสอบ")
+                Text("ยังไม่มีผลรางวัลที่บันทึก")
             } else {
                 items.groupBy { it.drawDate }.forEach { (date, values) ->
                     Text("งวดวันที่ $date", style = MaterialTheme.typography.titleMedium)
@@ -173,6 +266,7 @@ private fun ResultsScreen(items: List<DrawResultEntity>) {
                 }
             }
             Text("ข้อมูลที่บันทึกจะเก็บไว้ในเครื่องและแสดงได้เมื่อออฟไลน์")
+            Button(onClick = { showEntry = true }) { Text("กรอกผลรางวัลที่ตรวจสอบกับ GLO แล้ว") }
             Button(onClick = {
                 context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.glo.or.th/mission/reward-payment/check-reward")))
             }) { Text("เปิดหน้าตรวจผลรางวัลทางการ") }
