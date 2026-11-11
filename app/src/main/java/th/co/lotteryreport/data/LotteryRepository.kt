@@ -34,13 +34,22 @@ class LotteryRepository(
             return false
         }
 
-        val dao = database.drawScheduleDao()
-        val existing = dao.findByDate(item.drawDate)
-        if (existing?.isOfficiallyConfirmed == true && item.status == "ESTIMATED") {
-            return false
+        return database.withTransaction {
+            val dao = database.drawScheduleDao()
+            val existing = dao.findByDate(item.drawDate)
+            if (existing?.isOfficiallyConfirmed == true && item.status == "ESTIMATED") {
+                return@withTransaction false
+            }
+            if (existing?.isOfficiallyConfirmed == true && item.status == "CONFIRMED") {
+                val oldPublished = existing.sourcePublishedAtEpochMillis
+                val newPublished = item.sourcePublishedAtEpochMillis
+                if (newPublished == null || (oldPublished != null && newPublished <= oldPublished)) {
+                    return@withTransaction false
+                }
+            }
+            dao.upsert(item)
+            true
         }
-        dao.upsert(item)
-        return true
     }
 
     /**
