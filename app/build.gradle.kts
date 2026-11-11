@@ -18,6 +18,27 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        create("release") {
+            if (!releaseStorePath.isNullOrBlank()) {
+                storeFile = file(releaseStorePath)
+                storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("ANDROID_KEY_ALIAS")
+                keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+            }
+        }
+    }
+
+    buildTypes {
+        getByName("release") {
+            // Release signing is enabled only when the owner-provided keystore is injected by CI.
+            if (!releaseStorePath.isNullOrBlank()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+            isMinifyEnabled = false
+        }
+    }
+
     buildFeatures { compose = true }
 
     compileOptions {
