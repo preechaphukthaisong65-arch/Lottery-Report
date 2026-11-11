@@ -5,7 +5,7 @@ import argparse, hashlib, json, os, sys, urllib.error, urllib.request
 from datetime import datetime, timezone
 from html.parser import HTMLParser
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 ROOT = Path(__file__).resolve().parents[2]
 OUTPUT = ROOT / "data" / "verification"
@@ -74,10 +74,11 @@ def fetch_source(name: str, config: tuple[str, str, str], retrieved_at: str) -> 
             "parser_version": "source-probe-0.1.0",
         }
 
-def build_report(mode: str, now: datetime | None = None) -> dict[str, Any]:
+def build_report(mode: str, now: datetime | None = None,
+                 fetcher: Callable[[str, tuple[str, str, str], str], dict[str, Any]] = fetch_source) -> dict[str, Any]:
     current = now or datetime.now(timezone.utc)
     stamp = current.astimezone(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
-    checks = [fetch_source(name, cfg, stamp) for name, cfg in SOURCES.items() if cfg[0] == mode]
+    checks = [fetcher(name, cfg, stamp) for name, cfg in SOURCES.items() if cfg[0] == mode]
     unavailable = [x["name"] for x in checks if x["status"] == "SOURCE_UNAVAILABLE"]
     incomplete = [x["name"] for x in checks if x["status"] == "INCOMPLETE"]
     return {
