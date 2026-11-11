@@ -23,6 +23,9 @@ interface DrawScheduleDao {
     @Query("SELECT * FROM draw_schedules ORDER BY drawDate DESC")
     fun observeAll(): Flow<List<DrawScheduleEntity>>
 
+    @Query("SELECT * FROM draw_schedules WHERE drawDate = :drawDate LIMIT 1")
+    suspend fun findByDate(drawDate: String): DrawScheduleEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(item: DrawScheduleEntity)
 }
