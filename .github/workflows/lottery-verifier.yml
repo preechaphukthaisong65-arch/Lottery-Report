@@ -1,0 +1,61 @@
+name: Lottery source verifier
+
+on:
+  schedule:
+    - cron: "15 9 * * *"
+    - cron: "*/5 9 * * *"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Which sources to check
+        required: true
+        type: choice
+        options: [calendar, results]
+        default: calendar
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lottery-verifier
+  cancel-in-progress: false
+
+jobs:
+  check-sources:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Select check mode
+        id: mode
+        shell: bash
+        run: |
+          if [ "\${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "mode=\${{ inputs.mode }}" >> "$GITHUB_OUTPUT"
+          elif [ "\${{ github.event.schedule }}" = "*/5 9 * * *" ]; then
+            echo "mode=results" >> "$GITHUB_OUTPUT"
+          else
+            echo "mode=calendar" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Run conservative source checks
+        run: python .github/scripts/lottery_verifier.py --mode "\${{ steps.mode.outputs.mode }}"
+      - name: Commit verification evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/verification/
+          if git diff --cached --quiet; then
+            echo "No evidence changes to commit."
+            exit 0
+          fi
+          git commit -m "Record lottery source verification evidence"
+          git push origin HEAD:main
