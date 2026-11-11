@@ -33,19 +33,21 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Run verifier unit tests
+        run: python -m unittest discover -s .github/scripts -p 'test_*.py'
       - name: Select check mode
         id: mode
         shell: bash
         run: |
-          if [ "\${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "mode=\${{ inputs.mode }}" >> "$GITHUB_OUTPUT"
-          elif [ "\${{ github.event.schedule }}" = "*/5 9 * * *" ]; then
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "mode=${{ inputs.mode }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event.schedule }}" = "*/5 9 * * *" ]; then
             echo "mode=results" >> "$GITHUB_OUTPUT"
           else
             echo "mode=calendar" >> "$GITHUB_OUTPUT"
           fi
       - name: Run conservative source checks
-        run: python .github/scripts/lottery_verifier.py --mode "\${{ steps.mode.outputs.mode }}"
+        run: python .github/scripts/lottery_verifier.py --mode "${{ steps.mode.outputs.mode }}"
       - name: Commit verification evidence
         shell: bash
         run: |
