@@ -25,13 +25,37 @@ class LotteryRepository(
     fun observeSchedules(): Flow<List<DrawScheduleEntity>> =
         database.drawScheduleDao().observeAll()
 
-    /**
-     * Seeds ordinary 1st/16th dates as estimates for the next year.
-     * INSERT IGNORE guarantees this bootstrap cannot overwrite official dates.
-     */
     suspend fun seedEstimatedSchedule(today: LocalDate = LocalDate.now(ZoneId.of("Asia/Bangkok"))): Int {
         val estimates = DrawScheduleGenerator.generate(today, 12)
         return database.drawScheduleDao().insertEstimates(estimates).count { it != -1L }
+    }
+
+    suspend fun exportBackupJson(): String = database.withTransaction {
+        BackupCodec.encode(
+            database.drawScheduleDao().getAll(),
+            database.drawResultDao().getAll()
+        )
+    }
+
+    /**
+     * Restores only a fully validated backup. Validation happens before the transaction;
+     * replacement is atomic, so a failed restore cannot leave half of the database replaced.
+     */
+    suspend fun restoreBackupJson(json: String): Boolean {
+        val backup = BackupCodec.decode(json) ?: return false
+        return runCatching {
+            database.withTransaction {
+                database.drawResultDao().deleteAll()
+                database.drawScheduleDao().deleteAll()
+                if (backup.results.isNotEmpty()) {
+                    database.drawResultDao().insertAll(backup.results.map { it.copy(id = 0) })
+                }
+                if (backup.schedules.isNotEmpty()) {
+                    database.drawScheduleDao().upsertAll(backup.schedules)
+                }
+            }
+            true
+        }.getOrDefault(false)
     }
 
     suspend fun saveSchedule(item: DrawScheduleEntity): Boolean {
@@ -39,10 +63,8 @@ class LotteryRepository(
         if (item.status !in setOf("ESTIMATED", "CONFIRMED")) return false
 
         if (item.status == "CONFIRMED") {
-            if (!item.sourceUrl.orEmpty().startsWith("https://")) return false
-            val host = runCatching { URI(item.sourceUrl ?: return false).host }.getOrNull()
-            if (host != "glo.or.th" && host?.endsWith(".glo.or.th") != true) return false
-        } else if (!item.sourceUrl.isNullOrBlank()) {
+            if (!isGloHttpsUrl(item.sourceUrl)) return false
+        } else if (!item.sourceUrl.isNullOrBlank() || item.sourcePublishedAtEpochMillis != null) {
             return false
         }
 
@@ -64,19 +86,13 @@ class LotteryRepository(
         }
     }
 
-    /**
-     * Stores only structurally complete, already source-verified result groups.
-     * Existing result rows are never replaced by a later response.
-     */
     suspend fun saveVerifiedResults(
         drawDate: String,
         values: List<PrizeValue>,
         sourceUrl: String,
         verifiedAt: Instant = Instant.now()
     ): Boolean {
-        val host = runCatching { URI(sourceUrl).host }.getOrNull()
-        if (host != "glo.or.th" && host?.endsWith(".glo.or.th") != true) return false
-        if (!sourceUrl.startsWith("https://")) return false
+        if (!isGloHttpsUrl(sourceUrl)) return false
         if (!DrawResultValidator.validate(drawDate, values)) return false
 
         val entities = values.map {
@@ -92,5 +108,11 @@ class LotteryRepository(
             database.drawResultDao().insertAll(entities)
         }
         return true
+    }
+
+    private fun isGloHttpsUrl(value: String?): Boolean {
+        if (value.isNullOrBlank() || !value.startsWith("https://")) return false
+        val host = runCatching { URI(value).host }.getOrNull() ?: return false
+        return host == "glo.or.th" || host.endsWith(".glo.or.th")
     }
 }

@@ -5,6 +5,8 @@ import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.lifecycleScope
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -16,6 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
@@ -24,16 +27,21 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import th.co.lotteryreport.data.LotteryRepository
 import th.co.lotteryreport.data.local.DatabaseProvider
 import th.co.lotteryreport.data.local.DrawResultEntity
@@ -91,7 +99,7 @@ private fun LotteryReportApp(repository: LotteryRepository) {
                     0 -> OverviewScreen(results.size, schedules.size)
                     1 -> ScheduleScreen(schedules)
                     2 -> ResultsScreen(results)
-                    else -> SettingsScreen()
+                    else -> SettingsScreen(repository)
                 }
                 Spacer(Modifier.height(8.dp))
                 Text(
@@ -173,7 +181,76 @@ private fun ResultsScreen(items: List<DrawResultEntity>) {
 }
 
 @Composable
-private fun SettingsScreen() {
+private fun SettingsScreen(repository: LotteryRepository) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var message by remember { mutableStateOf("ข้อมูลสำรองเก็บเฉพาะในไฟล์ที่คุณเลือกบันทึก") }
+    var pendingRestoreUri by remember { mutableStateOf<Uri?>(null) }
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri != null) {
+            scope.launch {
+                val result = runCatching {
+                    val json = repository.exportBackupJson()
+                    withContext(Dispatchers.IO) {
+                        val output = context.contentResolver.openOutputStream(uri)
+                            ?: error("เปิดไฟล์ปลายทางไม่ได้")
+                        output.use { it.write(json.toByteArray(Charsets.UTF_8)) }
+                    }
+                }
+                message = if (result.isSuccess) "สำรองข้อมูลสำเร็จ" else "สำรองข้อมูลไม่สำเร็จ: ${result.exceptionOrNull()?.message ?: "เกิดข้อผิดพลาด"}"
+            }
+        }
+    }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        pendingRestoreUri = uri
+    }
+
+    if (pendingRestoreUri != null) {
+        AlertDialog(
+            onDismissRequest = { pendingRestoreUri = null },
+            title = { Text("ยืนยันการกู้คืนข้อมูล") },
+            text = { Text("การกู้คืนจะแทนที่ข้อมูลปัจจุบันทั้งหมดด้วยข้อมูลในไฟล์สำรอง ควรส่งออกข้อมูลปัจจุบันเก็บไว้ก่อน") },
+            confirmButton = {
+                TextButton(onClick = {
+                    val uri = pendingRestoreUri
+                    pendingRestoreUri = null
+                    if (uri != null) scope.launch {
+                        val result = runCatching {
+                            val json = withContext(Dispatchers.IO) {
+                                val input = context.contentResolver.openInputStream(uri)
+                                    ?: error("เปิดไฟล์สำรองไม่ได้")
+                                input.use { stream ->
+                                    val output = java.io.ByteArrayOutputStream()
+                                    val buffer = ByteArray(8_192)
+                                    var total = 0
+                                    while (true) {
+                                        val count = stream.read(buffer)
+                                        if (count < 0) break
+                                        total += count
+                                        require(total <= 5_000_000) { "ไฟล์สำรองมีขนาดเกินกำหนด" }
+                                        output.write(buffer, 0, count)
+                                    }
+                                    output.toString("UTF-8")
+                                }
+                            }
+                            check(repository.restoreBackupJson(json)) { "ไฟล์ไม่ถูกต้องหรือข้อมูลไม่ครบถ้วน" }
+                        }
+                        message = if (result.isSuccess) "กู้คืนข้อมูลสำเร็จ" else "กู้คืนไม่สำเร็จ: ${result.exceptionOrNull()?.message ?: "ไฟล์ไม่ถูกต้อง"}"
+                    }
+                }) { Text("กู้คืนข้อมูล") }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingRestoreUri = null }) { Text("ยกเลิก") }
+            }
+        )
+    }
+
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("ตั้งค่า", style = MaterialTheme.typography.titleLarge)
@@ -182,6 +259,16 @@ private fun SettingsScreen() {
             Text("การแจ้งเตือน: ยังไม่เปิดใช้งาน")
             Text("ซิงก์อัตโนมัติ: ยังไม่เปิดใช้งาน")
             Text("แหล่งข้อมูล: สำนักงานสลากกินแบ่งรัฐบาล (GLO) — รอการเชื่อมต่อ")
+            Spacer(Modifier.height(8.dp))
+            Text("สำรองและกู้คืนข้อมูล", style = MaterialTheme.typography.titleMedium)
+            Text("ไฟล์สำรองมีเฉพาะกำหนดการและผลรางวัลที่บันทึกในเครื่อง")
+            Button(onClick = { exportLauncher.launch("lottery-report-backup.json") }) {
+                Text("ส่งออกไฟล์สำรอง")
+            }
+            Button(onClick = { importLauncher.launch(arrayOf("application/json", "text/json")) }) {
+                Text("เลือกไฟล์เพื่อกู้คืน")
+            }
+            Text(message, style = MaterialTheme.typography.bodySmall)
         }
     }
 }
