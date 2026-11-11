@@ -14,6 +14,9 @@ interface DrawResultDao {
     @Query("SELECT * FROM draw_results WHERE drawDate = :drawDate ORDER BY category ASC, number ASC")
     fun observeByDrawDate(drawDate: String): Flow<List<DrawResultEntity>>
 
+    @Query("SELECT * FROM draw_results WHERE drawDate = :drawDate ORDER BY category ASC, number ASC")
+    suspend fun getByDrawDate(drawDate: String): List<DrawResultEntity>
+
     @Query("SELECT * FROM draw_results ORDER BY drawDate DESC, category ASC, number ASC")
     suspend fun getAll(): List<DrawResultEntity>
 
@@ -44,7 +47,6 @@ interface DrawScheduleDao {
     @Query("DELETE FROM draw_schedules")
     suspend fun deleteAll()
 
-    // Estimated dates must never replace an existing official confirmation.
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertEstimates(items: List<DrawScheduleEntity>): List<Long>
 }

@@ -37,10 +37,6 @@ class LotteryRepository(
         )
     }
 
-    /**
-     * Restores only a fully validated backup. Validation happens before the transaction;
-     * replacement is atomic, so a failed restore cannot leave half of the database replaced.
-     */
     suspend fun restoreBackupJson(json: String): Boolean {
         val backup = BackupCodec.decode(json) ?: return false
         return runCatching {
@@ -60,10 +56,12 @@ class LotteryRepository(
 
     suspend fun saveSchedule(item: DrawScheduleEntity): Boolean {
         if (runCatching { LocalDate.parse(item.drawDate) }.isFailure) return false
+        if (item.checkedAtEpochMillis <= 0) return false
         if (item.status !in setOf("ESTIMATED", "CONFIRMED")) return false
 
         if (item.status == "CONFIRMED") {
             if (!isGloHttpsUrl(item.sourceUrl)) return false
+            if (item.sourcePublishedAtEpochMillis != null && item.sourcePublishedAtEpochMillis <= 0) return false
         } else if (!item.sourceUrl.isNullOrBlank() || item.sourcePublishedAtEpochMillis != null) {
             return false
         }
@@ -94,6 +92,7 @@ class LotteryRepository(
     ): Boolean {
         if (!isGloHttpsUrl(sourceUrl)) return false
         if (!DrawResultValidator.validate(drawDate, values)) return false
+        if (verifiedAt.toEpochMilli() <= 0) return false
 
         val entities = values.map {
             DrawResultEntity(
@@ -104,10 +103,11 @@ class LotteryRepository(
                 verifiedAtEpochMillis = verifiedAt.toEpochMilli()
             )
         }
-        database.withTransaction {
-            database.drawResultDao().insertAll(entities)
+        return database.withTransaction {
+            val dao = database.drawResultDao()
+            if (dao.getByDrawDate(drawDate).isNotEmpty()) return@withTransaction false
+            dao.insertAll(entities).size == entities.size
         }
-        return true
     }
 
     private fun isGloHttpsUrl(value: String?): Boolean {
