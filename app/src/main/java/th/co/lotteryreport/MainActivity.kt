@@ -22,25 +22,39 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import th.co.lotteryreport.data.LotteryRepository
+import th.co.lotteryreport.data.local.DatabaseProvider
+import th.co.lotteryreport.data.local.DrawResultEntity
+import th.co.lotteryreport.data.local.DrawScheduleEntity
 
 class MainActivity : ComponentActivity() {
+    private val repository: LotteryRepository by lazy {
+        LotteryRepository(DatabaseProvider.get(applicationContext))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { MaterialTheme { LotteryReportApp() } }
+        setContent { MaterialTheme { LotteryReportApp(repository) } }
     }
 }
 
 private val tabs = listOf("ภาพรวม", "ปฏิทิน", "ผลรางวัล", "ตั้งค่า")
 
 @Composable
-private fun LotteryReportApp() {
+private fun LotteryReportApp(repository: LotteryRepository) {
     var selectedTab by remember { mutableIntStateOf(0) }
+    val resultFlow = remember(repository) { repository.observeAllResults() }
+    val scheduleFlow = remember(repository) { repository.observeSchedules() }
+    val results by resultFlow.collectAsState(initial = emptyList())
+    val schedules by scheduleFlow.collectAsState(initial = emptyList())
+
     Scaffold(
         bottomBar = {
             NavigationBar {
@@ -66,14 +80,14 @@ private fun LotteryReportApp() {
                 Text("Lottery Report", style = MaterialTheme.typography.headlineMedium)
                 Text("ติดตามกำหนดวันออกรางวัลและผลสลากกินแบ่งรัฐบาล")
                 when (selectedTab) {
-                    0 -> OverviewScreen()
-                    1 -> PlaceholderScreen("ปฏิทินวันออกรางวัล", "ยังไม่ได้เชื่อมต่อแหล่งข้อมูลกำหนดการ")
-                    2 -> PlaceholderScreen("ผลรางวัล", "ยังไม่มีข้อมูลผลรางวัลที่ตรวจสอบจากแหล่งทางการ")
-                    else -> PlaceholderScreen("ตั้งค่า", "การแจ้งเตือนและการซิงก์จะเปิดใช้งานในขั้นตอนถัดไป")
+                    0 -> OverviewScreen(results.size, schedules.size)
+                    1 -> ScheduleScreen(schedules)
+                    2 -> ResultsScreen(results)
+                    else -> SettingsScreen()
                 }
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "แอปนี้ยังไม่เชื่อมต่อ GLO และไม่มีข้อมูลรางวัลจริงในรุ่นนี้",
+                    "ข้อมูลจะแสดงเป็นข้อมูลยืนยันเมื่อผ่านการตรวจสอบจากแหล่งทางการเท่านั้น",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error
                 )
@@ -84,21 +98,74 @@ private fun LotteryReportApp() {
 }
 
 @Composable
-private fun OverviewScreen() {
+private fun OverviewScreen(resultCount: Int, scheduleCount: Int) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("สถานะข้อมูล", style = MaterialTheme.typography.titleLarge)
-            Text("ยังไม่ได้ซิงก์ข้อมูล")
-            Text("แหล่งข้อมูล: ยังไม่เชื่อมต่อ")
+            Text("ระบบฐานข้อมูลภายในเครื่องพร้อมใช้งาน")
+            Text("กำหนดการที่บันทึก: $scheduleCount")
+            Text("รายการผลรางวัลที่บันทึก: $resultCount")
             Text("เขตเวลา: Asia/Bangkok")
-            Button(onClick = { /* Sync will be implemented with the official source adapter. */ }) {
-                Text("ตรวจสอบข้อมูล (ยังไม่พร้อมใช้งาน)")
-            }
+            Text("การเชื่อมต่อ GLO: ยังไม่เปิดใช้งาน")
         }
     }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        SummaryCard("กำหนดการ", "ยังไม่มีข้อมูล")
-        SummaryCard("ผลรางวัล", "ยังไม่มีข้อมูล")
+        SummaryCard("กำหนดการ", scheduleCount.toString())
+        SummaryCard("ผลรางวัล", resultCount.toString())
+    }
+}
+
+@Composable
+private fun ScheduleScreen(items: List<DrawScheduleEntity>) {
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("ปฏิทินวันออกรางวัล", style = MaterialTheme.typography.titleLarge)
+            if (items.isEmpty()) {
+                Text("ยังไม่มีวันออกรางวัลที่บันทึก")
+                Text("จะไม่สร้างวันยืนยันจากการคาดเดา")
+            } else {
+                items.forEach { item ->
+                    Text(item.drawDate)
+                    Text(if (item.isOfficiallyConfirmed) "ยืนยันจากแหล่งทางการ" else "วันประมาณการ")
+                    Text("ตรวจสอบล่าสุด: ${item.checkedAtEpochMillis}")
+                }
+            }
+            Text("แหล่งข้อมูลกำหนดการยังไม่ได้เชื่อมต่อ")
+        }
+    }
+}
+
+@Composable
+private fun ResultsScreen(items: List<DrawResultEntity>) {
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("ผลรางวัล", style = MaterialTheme.typography.titleLarge)
+            if (items.isEmpty()) {
+                Text("ยังไม่มีผลรางวัลที่ผ่านการตรวจสอบ")
+            } else {
+                items.groupBy { it.drawDate }.forEach { (date, values) ->
+                    Text("งวดวันที่ $date", style = MaterialTheme.typography.titleMedium)
+                    values.forEach { value ->
+                        Text("${value.category}: ${value.number}")
+                    }
+                }
+            }
+            Text("ข้อมูลที่บันทึกจะเก็บไว้ในเครื่องและแสดงได้เมื่อออฟไลน์")
+        }
+    }
+}
+
+@Composable
+private fun SettingsScreen() {
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("ตั้งค่า", style = MaterialTheme.typography.titleLarge)
+            Text("เขตเวลา: Asia/Bangkok")
+            Text("ภาษา: ไทย")
+            Text("การแจ้งเตือน: ยังไม่เปิดใช้งาน")
+            Text("ซิงก์อัตโนมัติ: ยังไม่เปิดใช้งาน")
+            Text("แหล่งข้อมูล: สำนักงานสลากกินแบ่งรัฐบาล (GLO) — รอการเชื่อมต่อ")
+        }
     }
 }
 
@@ -108,16 +175,6 @@ private fun SummaryCard(title: String, value: String) {
         Column(Modifier.padding(12.dp)) {
             Text(title, style = MaterialTheme.typography.titleSmall)
             Text(value, style = MaterialTheme.typography.bodyMedium)
-        }
-    }
-}
-
-@Composable
-private fun PlaceholderScreen(title: String, message: String) {
-    Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(title, style = MaterialTheme.typography.titleLarge)
-            Text(message)
         }
     }
 }
