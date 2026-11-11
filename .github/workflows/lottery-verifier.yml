@@ -8,7 +8,7 @@ on:
       - ".github/workflows/lottery-verifier.yml"
   schedule:
     - cron: "15 9 * * *"
-    - cron: "*/5 9 * * *"
+    - cron: "*/5 9-10 * * *"
   workflow_dispatch:
     inputs:
       mode:
@@ -46,10 +46,12 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "mode=${{ inputs.mode }}" >> "$GITHUB_OUTPUT"
-          elif [ "${{ github.event.schedule }}" = "*/5 9 * * *" ]; then
+          elif [ "${{ github.event_name }}" = "push" ]; then
             echo "mode=results" >> "$GITHUB_OUTPUT"
-          else
+          elif [ "${{ github.event.schedule }}" = "15 9 * * *" ]; then
             echo "mode=calendar" >> "$GITHUB_OUTPUT"
+          else
+            echo "mode=results" >> "$GITHUB_OUTPUT"
           fi
       - name: Run conservative source checks
         run: python .github/scripts/lottery_verifier.py --mode "${{ steps.mode.outputs.mode }}"
