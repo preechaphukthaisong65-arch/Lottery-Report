@@ -5,6 +5,8 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
+val releaseStorePath = System.getenv("ANDROID_KEYSTORE_PATH")
+
 android {
     namespace = "th.co.lotteryreport"
     compileSdk = 35
