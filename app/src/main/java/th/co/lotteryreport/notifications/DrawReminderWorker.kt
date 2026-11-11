@@ -48,7 +48,7 @@ class DrawReminderWorker(
         val status = if (schedule.isOfficiallyConfirmed) "ยืนยันจาก GLO" else "วันประมาณการ"
         val notification = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle("พรุ่งนี้มีวันออกรางวัล")
+            .setContentTitle("ใกล้ถึงวันออกรางวัล")
             .setContentText("งวดวันที่ $drawDate ($status)")
             .setStyle(NotificationCompat.BigTextStyle().bigText("งวดวันที่ $drawDate — $status โปรดตรวจสอบประกาศล่าสุดจาก GLO"))
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)

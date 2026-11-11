@@ -1,7 +1,11 @@
 package th.co.lotteryreport
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
 import android.content.pm.PackageManager
 import android.os.Build
 import android.net.Uri
@@ -34,6 +38,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -132,7 +137,41 @@ private fun LotteryReportApp(repository: LotteryRepository) {
 }
 
 @Composable
+@Composable
+private fun rememberInternetConnectivity(): Boolean {
+    val context = LocalContext.current
+    val manager = remember(context) {
+        context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    }
+    fun currentStatus(): Boolean {
+        val network = manager.activeNetwork ?: return false
+        val capabilities = manager.getNetworkCapabilities(network) ?: return false
+        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+            capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+    }
+    var online by remember(manager) { mutableStateOf(currentStatus()) }
+    DisposableEffect(manager) {
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                online = currentStatus()
+            }
+            override fun onLost(network: Network) {
+                online = currentStatus()
+            }
+            override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
+                online = networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                    networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+            }
+        }
+        manager.registerDefaultNetworkCallback(callback)
+        onDispose { manager.unregisterNetworkCallback(callback) }
+    }
+    return online
+}
+
+@Composable
 private fun OverviewScreen(resultCount: Int, scheduleCount: Int) {
+    val online = rememberInternetConnectivity()
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("สถานะข้อมูล", style = MaterialTheme.typography.titleLarge)
@@ -140,6 +179,7 @@ private fun OverviewScreen(resultCount: Int, scheduleCount: Int) {
             Text("กำหนดการที่บันทึก: $scheduleCount")
             Text("รายการผลรางวัลที่บันทึก: $resultCount")
             Text("เขตเวลา: Asia/Bangkok")
+            Text("อินเทอร์เน็ต: ${if (online) "ออนไลน์" else "ออฟไลน์"}")
             Text("การเชื่อมต่อ GLO: ยังไม่เปิดใช้งาน")
         }
     }
@@ -274,6 +314,14 @@ private val prizeInputDefinitions = listOf(
 private fun ResultsScreen(items: List<DrawResultEntity>, repository: LotteryRepository) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    var searchQuery by remember { mutableStateOf("") }
+    val filteredItems = remember(items, searchQuery) {
+        if (searchQuery.isBlank()) items else items.filter { item ->
+            item.drawDate.contains(searchQuery.trim(), ignoreCase = true) ||
+                item.category.contains(searchQuery.trim(), ignoreCase = true) ||
+                item.number.contains(searchQuery.trim(), ignoreCase = true)
+        }
+    }
     var showEntry by remember { mutableStateOf(false) }
     var drawDate by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
@@ -351,10 +399,19 @@ private fun ResultsScreen(items: List<DrawResultEntity>, repository: LotteryRepo
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("ผลรางวัล", style = MaterialTheme.typography.titleLarge)
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                label = { Text("ค้นหาวันที่ หมวดรางวัล หรือหมายเลข") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
             if (items.isEmpty()) {
                 Text("ยังไม่มีผลรางวัลที่บันทึก")
+            } else if (filteredItems.isEmpty()) {
+                Text("ไม่พบข้อมูลที่ตรงกับคำค้นหา")
             } else {
-                items.groupBy { it.drawDate }.forEach { (date, values) ->
+                filteredItems.groupBy { it.drawDate }.forEach { (date, values) ->
                     Text("งวดวันที่ $date", style = MaterialTheme.typography.titleMedium)
                     values.forEach { value ->
                         Text("${value.category}: ${value.number}")
