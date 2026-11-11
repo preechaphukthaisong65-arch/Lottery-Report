@@ -184,7 +184,7 @@ private fun ScheduleScreen(items: List<DrawScheduleEntity>, repository: LotteryR
                                 drawDate = drawDate,
                                 status = "CONFIRMED",
                                 sourceUrl = sourceUrl,
-                                sourcePublishedAtEpochMillis = now,
+                                sourcePublishedAtEpochMillis = null,
                                 checkedAtEpochMillis = now
                             )
                         )

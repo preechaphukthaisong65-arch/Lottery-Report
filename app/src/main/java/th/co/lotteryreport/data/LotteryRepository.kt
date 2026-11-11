@@ -75,7 +75,9 @@ class LotteryRepository(
             if (existing?.isOfficiallyConfirmed == true && item.status == "CONFIRMED") {
                 val oldPublished = existing.sourcePublishedAtEpochMillis
                 val newPublished = item.sourcePublishedAtEpochMillis
-                if (newPublished == null || (oldPublished != null && newPublished <= oldPublished)) {
+                if (oldPublished != null) {
+                    if (newPublished == null || newPublished <= oldPublished) return@withTransaction false
+                } else if (item.checkedAtEpochMillis <= existing.checkedAtEpochMillis) {
                     return@withTransaction false
                 }
             }
