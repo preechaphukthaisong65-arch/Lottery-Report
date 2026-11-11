@@ -6,6 +6,28 @@ plugins {
 }
 
 val releaseStorePath = System.getenv("ANDROID_KEYSTORE_PATH")
+val releaseStorePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+val releaseKeyAlias = System.getenv("ANDROID_KEY_ALIAS")
+val releaseKeyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+val releaseTasksRequested = gradle.startParameter.taskNames.any {
+    it.contains("assemblerelease", ignoreCase = true) ||
+        it.contains("bundlerelease", ignoreCase = true)
+}
+
+if (releaseTasksRequested) {
+    val missing = buildList {
+        if (releaseStorePath.isNullOrBlank()) add("ANDROID_KEYSTORE_PATH")
+        if (releaseStorePassword.isNullOrBlank()) add("ANDROID_KEYSTORE_PASSWORD")
+        if (releaseKeyAlias.isNullOrBlank()) add("ANDROID_KEY_ALIAS")
+        if (releaseKeyPassword.isNullOrBlank()) add("ANDROID_KEY_PASSWORD")
+    }
+    require(missing.isEmpty()) {
+        "Release signing is mandatory. Missing environment variables: ${missing.joinToString()}"
+    }
+    require(file(releaseStorePath!!).isFile) {
+        "Release keystore file does not exist at ANDROID_KEYSTORE_PATH."
+    }
+}
 
 android {
     namespace = "th.co.lotteryreport"
@@ -24,19 +46,16 @@ android {
         create("release") {
             if (!releaseStorePath.isNullOrBlank()) {
                 storeFile = file(releaseStorePath)
-                storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
-                keyAlias = System.getenv("ANDROID_KEY_ALIAS")
-                keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
             }
         }
     }
 
     buildTypes {
         getByName("release") {
-            // Release signing is enabled only when the owner-provided keystore is injected by CI.
-            if (!releaseStorePath.isNullOrBlank()) {
-                signingConfig = signingConfigs.getByName("release")
-            }
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = false
         }
     }
