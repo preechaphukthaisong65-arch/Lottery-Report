@@ -28,6 +28,7 @@ class LotteryRepository(
         if (item.status !in setOf("ESTIMATED", "CONFIRMED")) return false
 
         if (item.status == "CONFIRMED") {
+            if (!item.sourceUrl.orEmpty().startsWith("https://")) return false
             val host = runCatching { URI(item.sourceUrl ?: return false).host }.getOrNull()
             if (host != "glo.or.th" && host?.endsWith(".glo.or.th") != true) return false
         } else if (!item.sourceUrl.isNullOrBlank()) {
