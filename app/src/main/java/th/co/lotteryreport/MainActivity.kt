@@ -57,9 +57,11 @@ import th.co.lotteryreport.data.LotteryRepository
 import th.co.lotteryreport.data.local.DatabaseProvider
 import th.co.lotteryreport.data.local.DrawResultEntity
 import th.co.lotteryreport.data.local.DrawScheduleEntity
+import th.co.lotteryreport.data.local.VerificationEventEntity
 import th.co.lotteryreport.domain.DrawResultValidator
 import th.co.lotteryreport.domain.PrizeValue
 import th.co.lotteryreport.notifications.DrawReminderScheduler
+import th.co.lotteryreport.notifications.VerificationSyncScheduler
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -71,6 +73,15 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (Build.VERSION.SDK_INT >= 33 &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED &&
+            !getSharedPreferences("app_permissions", MODE_PRIVATE).getBoolean("notification_requested", false)
+        ) {
+            getSharedPreferences("app_permissions", MODE_PRIVATE).edit()
+                .putBoolean("notification_requested", true).apply()
+            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 7001)
+        }
+        VerificationSyncScheduler.schedule(applicationContext)
         lifecycleScope.launch {
             runCatching {
                 repository.seedEstimatedSchedule()
@@ -91,8 +102,10 @@ private fun LotteryReportApp(repository: LotteryRepository) {
     var selectedTab by remember { mutableIntStateOf(0) }
     val resultFlow = remember(repository) { repository.observeAllResults() }
     val scheduleFlow = remember(repository) { repository.observeSchedules() }
+    val eventFlow = remember(repository) { DatabaseProvider.get(LocalContext.current).verificationEventDao().observeRecent() }
     val results by resultFlow.collectAsState(initial = emptyList())
     val schedules by scheduleFlow.collectAsState(initial = emptyList())
+    val verificationEvents by eventFlow.collectAsState(initial = emptyList())
 
     Scaffold(
         bottomBar = {
@@ -119,7 +132,7 @@ private fun LotteryReportApp(repository: LotteryRepository) {
                 Text("Lottery Report", style = MaterialTheme.typography.headlineMedium)
                 Text("ติดตามกำหนดวันออกรางวัลและผลสลากกินแบ่งรัฐบาล")
                 when (selectedTab) {
-                    0 -> OverviewScreen(results.size, schedules.size)
+                    0 -> OverviewScreen(results.size, schedules.size, verificationEvents)
                     1 -> ScheduleScreen(schedules, repository)
                     2 -> ResultsScreen(results, repository)
                     else -> SettingsScreen(repository)
@@ -169,7 +182,7 @@ private fun rememberInternetConnectivity(): Boolean {
 }
 
 @Composable
-private fun OverviewScreen(resultCount: Int, scheduleCount: Int) {
+private fun OverviewScreen(resultCount: Int, scheduleCount: Int, events: List<VerificationEventEntity>) {
     val online = rememberInternetConnectivity()
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -185,6 +198,20 @@ private fun OverviewScreen(resultCount: Int, scheduleCount: Int) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         SummaryCard("กำหนดการ", scheduleCount.toString())
         SummaryCard("ผลรางวัล", resultCount.toString())
+    }
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("ประวัติบอทตรวจสอบ", style = MaterialTheme.typography.titleLarge)
+            if (events.isEmpty()) {
+                Text("ยังไม่มีเหตุผิดปกติจากบอท หรือยังไม่ได้รับรายงานรอบแรก")
+            } else {
+                events.take(5).forEach { event ->
+                    Text("\${event.checkedAt} · \${event.status}")
+                    Text(event.message, style = MaterialTheme.typography.bodyMedium)
+                    if (event.sources.isNotBlank()) Text("แหล่งข้อมูล: \${event.sources}", style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        }
     }
 }
 
