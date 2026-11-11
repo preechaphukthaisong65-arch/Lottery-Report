@@ -53,6 +53,6 @@ GLO Data Catalog แสดงรายการ API Resource สำหรับ�
 
 ## CI และ Release
 
-GitHub Actions รัน unit tests และสร้าง Debug APK เมื่อ Push ไปยัง main
+GitHub Actions รัน unit tests และสร้าง Debug APK เมื่อ Push ไปยัง main หรือเปิด Pull Request ไปยัง main
 
-Signed Release ใช้ Keystore ที่เจ้าของโปรเจกต์จัดเตรียมผ่าน GitHub Actions Secrets เท่านั้น ห้ามใส่ Keystore หรือรหัสผ่านลงใน repository การสร้าง Release ทำผ่าน workflow_dispatch หลังเพิ่ม versionCode/versionName และตรวจ migration แล้ว
+เมื่อ Push ไปยัง main และ Build/Tests ผ่าน ระบบจะสร้าง Signed Release APK ต่อโดยอัตโนมัติ ใช้ Keystore ที่เจ้าของโปรเจกต์จัดเตรียมผ่าน GitHub Actions Secrets เท่านั้น พร้อมตรวจ SHA-256 certificate ให้ตรงกับรุ่น 0.1.0 ก่อนอัปโหลด Artifact ห้ามใส่ Keystore หรือรหัสผ่านลงใน repository
