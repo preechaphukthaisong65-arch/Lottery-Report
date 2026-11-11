@@ -136,7 +136,7 @@ private fun ScheduleScreen(items: List<DrawScheduleEntity>) {
                 items.forEach { item ->
                     Text(item.drawDate)
                     Text(if (item.isOfficiallyConfirmed) "ยืนยันจากแหล่งทางการ" else "วันประมาณการ")
-                    Text("ตรวจสอบล่าสุด: \${item.checkedAtEpochMillis}")
+                    Text("ตรวจสอบล่าสุด: ${item.checkedAtEpochMillis}")
                 }
             }
             Text("วันปกติ 1 และ 16 เป็นเพียงวันประมาณการ จนกว่า GLO จะประกาศยืนยัน")
@@ -160,7 +160,7 @@ private fun ResultsScreen(items: List<DrawResultEntity>) {
                 items.groupBy { it.drawDate }.forEach { (date, values) ->
                     Text("งวดวันที่ $date", style = MaterialTheme.typography.titleMedium)
                     values.forEach { value ->
-                        Text("\${value.category}: \${value.number}")
+                        Text("${value.category}: ${value.number}")
                     }
                 }
             }
