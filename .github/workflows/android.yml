@@ -71,6 +71,7 @@ jobs:
           done
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/lottery-report-release.keystore"
           chmod 600 "$RUNNER_TEMP/lottery-report-release.keystore"
+          keytool -list -keystore "$RUNNER_TEMP/lottery-report-release.keystore" -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" >/dev/null
           echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/lottery-report-release.keystore" >> "$GITHUB_ENV"
       - name: Build signed release APK
         env:
@@ -78,6 +79,12 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: gradle :app:assembleRelease
+      - name: Verify APK signature
+        run: |
+          set -euo pipefail
+          APK="app/build/outputs/apk/release/app-release.apk"
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK"
       - name: Upload signed release APK
         uses: actions/upload-artifact@v4
         with:
