@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "bot_version": "0.1.0",
+  "mode": "results",
+  "checked_at": "2026-11-13T17:06:12Z",
+  "timezone": "UTC",
+  "overall_status": "INCOMPLETE",
+  "verification_enabled": false,
+  "reason": "Reachability is monitored, but validated date/result parsers are not enabled. No data is approved or written into the app database.",
+  "source_summary": {
+    "total": 4,
+    "available": 3,
+    "incomplete": 1,
+    "unavailable": 0,
+    "unavailable_sources": [],
+    "incomplete_sources": [
+      "sanook"
+    ]
+  },
+  "checks": [
+    {
+      "name": "glo_results",
+      "group": "results",
+      "authority": "official",
+      "url": "https://www.glo.or.th/mission/reward-payment/check-reward",
+      "final_url": "https://www.glo.or.th/mission/reward-payment/check-reward",
+      "retrieved_at": "2026-11-13T17:06:12Z",
+      "status": "AVAILABLE",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "sha256": "87acfa9ec1b6b22b4830c5ff6809aa1fc83417a413b026d1975f02e61b1f469a",
+      "text_excerpt": "สำนักงานสลากกินแบ่งรัฐบาล ค้นหา ค้นหา ก ก ก ไทย | ENG 0-2528-9999 หน้าหลัก หน้าหลัก ไทย EN ก ก ก ค้นหา ค้นหา ตรวจผลรางวัลสลากกินแบ่งรัฐบาล ตรวจผลรางวัลจากหมายเลขสลาก ตรวจผลรางวัลจากหมายเลขบาร์โค้ด ตรวจผลรางวัล N3 จากหมายเลขสลาก ตรวจผลรางวัลจากหมายเลขสลาก ปี * ปี 2569 2568 2567 2566 2565 2564 2563 2562 2561 2560 2559 งวดประจำวันที่ * งวดประจำวันที่ เลขสลาก 1 เลขสลาก 2 เลขสลาก 3 เลขสลาก 4 เลขสลาก 5 เลขสลาก 6 เลขสลาก 7 เลขสลาก 8 เลขสลาก 9 เลขสลาก 10 เลขสลาก 1 เลขสลาก 2 เลขสลาก 3 เลขสลาก 4 เลขสลาก 5 เลขสลาก 6 เลขสลาก 7 เลขสลาก 8 เลขสลาก 9 เลขสลาก 10 ใบตรวจรางวัล ตรวจผลรางวัล รีเซ็ต ตรวจผลรางวัล ใบตรวจรางวัล รีเซ็ต * สลากกินแบ่งรัฐบาล ผู้ถูกรางวัลมีสิทธิเรียกร้องเงินรางวัลภายใน 2 ปี นับแต่วันออกรางวัลสลาก หากพ้นกำหนดจะนำส่งเป็นรายได้แผ่นดิน * สลากการกุศล ผู้ถูกรางวัลมีสิทธิเรียกร้องเงินรางวัลภายใน 10 ปี นับแต่ออกรางวัลสลาก หากพ้นกำหนดจะนำส่งเป็นรายได้แผ่นดิน เงื่อนไขการตรวจผลรางวัลสลากกินแบ่งรัฐบาล (ใช้ตั้งแต่งวดวันที่ 1 กันยายน 2560 เป็นต้นไป) สลาก 1 ชุด มี 1 ล้านฉบับ ฉบับละ 80 บาท ถ้าจำหน่ายหมด กำหนดเงินรางวัลต่อชุด ดังนี้ ลำดับ รางวัล จำนวน มูลค่า (บาท) 1. รางวัลที่ หนึ่ง 1 รางวัล 6,000,000 2. รางวัลที่ สอง 5 รางวัล 200,000 3. รางวัลที่ สาม 10 รางวัล 80,000 4. รางวัลที่ สี่ 50 รางวัล",
+      "bytes_read": 680840,
+      "parser_version": "source-probe-0.1.0"
+    },
+    {
+      "name": "sanook",
+      "group": "results",
+      "authority": "secondary",
+      "url": "https://news.sanook.com/lotto/",
+      "final_url": "https://news.sanook.com/lotto/",
+      "retrieved_at": "2026-11-13T17:06:12Z",
+      "status": "INCOMPLETE",
+      "http_status": 200,
+      "content_type": "text/html; charset=UTF-8",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "text_excerpt": "",
+      "bytes_read": 0,
+      "parser_version": "source-probe-0.1.0"
+    },
+    {
+      "name": "thairath",
+      "group": "results",
+      "authority": "secondary",
+      "url": "https://en.thairath.co.th/lottery/latest-result",
+      "final_url": "https://en.thairath.co.th/lottery/latest-result",
+      "retrieved_at": "2026-11-13T17:06:12Z",
+      "status": "AVAILABLE",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "sha256": "5d82ae6520f84c055ed182b84090d49076854bca1b87a3bf90545d8253bad0cc",
+      "text_excerpt": "; Home News Entertain Horoscope Lifestyle Lotto Sport Scoop Money Plus Thai version Home News Entertain Horoscope Lifestyle Lotto Sport Scoop Money Plus Thai version Thairath Website Thairath Shopping Thairath Sport Thairath Money Thairath TV Thairath Plus Mirror Thairath Logistics Follow Us Facebook Line Youtube Twitter Instagram Tiktok Terms & Conditions Privacy Sales & Advertising About us latest-result N3 Lottery Results for 1 November 2026 Announced: Check All N3 Prizes Here Latest-result 01 Nov 2026 17:28 GMT+7 GSB Special 5-Year Savings Lottery Latest Results November 1, 2026 Latest-result 01 Nov 2026 11:00 GMT+7 Check Latest 2-Year Special GSB Savings Bonds Results for 1/11/26 Latest-result 01 Nov 2026 09:00 GMT+7 N3 Lottery Results for 16 October 2026 Announced: Check All N3 Prizes Here Latest-result 16 Oct 2026 17:02 GMT+7 Housing Bank Savings Lottery Results for 16 October 2026 Latest-result 16 Oct 2026 17:00 GMT+7 More Lottery Topics lotto news latest-result Sections Home News Entertain Horoscope Lifestyle Lotto Sport Scoop Money Plus Thai version Thairath Website Thairath Shopping Thairath Sport Thairath Money Thairath TV Thairath Plus Mirror Thairath Logistics Follow ",
+      "bytes_read": 85339,
+      "parser_version": "source-probe-0.1.0"
+    },
+    {
+      "name": "kapook",
+      "group": "results",
+      "authority": "secondary",
+      "url": "https://lottery.kapook.com/",
+      "final_url": "https://lottery.kapook.com/",
+      "retrieved_at": "2026-11-13T17:06:12Z",
+      "status": "AVAILABLE",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "sha256": "bd1ba5e73099614ef852afdd60a95f45e95b040cc54895fec9aadff2875a507d",
+      "text_excerpt": "ตรวจหวย 16 พ.ย. 69 ตรวจสลากกินแบ่งรัฐบาลงวดนี้ LOTTERY ข่าว-ความรู้ ข่าว ข่าวบันเทิง ตรวจหวย ผลบอลสด การเงิน การศึกษา บันเทิง ดูหนัง Music Station ละคร บันเทิงเกาหลี ไลฟ์ไตล์ ดูดวง ผู้หญิง ผู้ชาย สุขภาพ ท่องเที่ยว สูตรอาหารง่ายๆ ช้อปปิ้ง รถยนต์ บ้านและการตกแต่ง มือถือ ราคาทอง ราคาน้ำมัน วาไรตี้ แต่งงาน แม่และเด็ก สัตว์เลี้ยง Infographic บริการ แอปฯ กระปุก คอร์สออนไลน์ เรียนเลขออนไลน์ ติดต่อโฆษณา แจ้งปัญหา ร่วมงานกับเรา ตรวจหวย เลขเด็ดงวดนี้ แม่น้ำหนึ่ง หวยแม่จำเนียร หวยบ้านสีฟ้า หวยซอง คำชะโนด หวยหลวงพ่อปากแดง เลขพุ่มพวง ทะเบียนรถนายก หวยเจ๊ฟองเบียร์ หวยพญาเต่างอย เลขเด็ดทั้งหมด ตรวจหวยงวดนี้ ตรวจหวยย้อนหลัง สถิติหวย ข่าวหวย หวยลาว LOTTERY เลือกหมวด ตรวจหวย เลขเด็ดงวดนี้ แม่น้ำหนึ่ง หวยแม่จำเนียร หวยบ้านสีฟ้า หวยซอง คำชะโนด หวยหลวงพ่อปากแดง เลขพุ่มพวง ทะเบียนรถนายก หวยเจ๊ฟองเบียร์ หวยพญาเต่างอย เลขเด็ดทั้งหมด ตรวจหวยย้อนหลัง สถิติหวย ข่าวหวย หวยลาว ข่าว-ความรู้ ข่าว ข่าวบันเทิง ตรวจหวย ผลบอลสด การเงิน การศึกษา บันเทิง ดูหนัง Music Station ละคร บันเทิงเกาหลี ไลฟ์ไตล์ ดูดวง ผู้หญิง ผู้ชาย สุขภาพ ท่องเที่ยว สูตรอาหารง่ายๆ ช้อปปิ้ง รถยนต์ บ้านและการตกแต่ง มือถือ ราคาทอง ราคาน้ำมัน วาไรตี้ แต่งงาน แม่และเด็ก สัตว์เลี้ยง Infographic บริการ แอปฯ กระปุก ติดต่อโฆษณา แจ้งปัญหา ร่วมงานกับเรา ",
+      "bytes_read": 81332,
+      "parser_version": "source-probe-0.1.0"
+    }
+  ]
+}
